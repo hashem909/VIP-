@@ -944,4 +944,440 @@ function renderPayment(){
                     id="addr"
                     readonly
                     value="${w.address}"
-           
+                    class="
+                    mono
+                    min-w-0
+                    flex-1
+                    bg-transparent
+                    px-2
+                    text-xs
+                    text-slate-200">
+
+
+                <button
+                    onclick="copyAddress()"
+                    class="
+                    gold-bg
+                    shrink-0
+                    rounded-xl
+                    px-4
+                    py-2.5
+                    text-xs
+                    font-black
+                    text-slate-950">
+
+                    <i class="fa-regular fa-copy"></i>
+                    نسخ
+
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <div class="
+            mt-3
+            rounded-2xl
+            border border-amber-500/15
+            bg-amber-500/5
+            p-4
+            text-xs
+            text-amber-200">
+
+            <b>⚠ تنبيه:</b>
+
+            أرسل ${w.name}
+            عبر <b>${w.network}</b>
+            فقط.
+
+            استخدام شبكة مختلفة قد يؤدي
+            إلى فقدان الأموال.
+
+        </div>
+
+
+        <button
+            onclick="renderProof()"
+            class="
+            gold-bg
+            mt-5
+            w-full
+            rounded-2xl
+            py-3.5
+            font-black
+            text-slate-950">
+
+            تم التحويل — إرفاق الإثبات
+
+            <i class="
+                fa-solid
+                fa-arrow-left
+                mr-2">
+            </i>
+
+        </button>
+
+    </div>
+
+    `;
+
+}
+
+
+/* ================================
+   COPY ADDRESS
+================================ */
+
+async function copyAddress(){
+
+    try{
+
+        await navigator.clipboard.writeText(
+            wallets[state.coin].address
+        );
+
+        modal(
+            'تم نسخ العنوان',
+            'تم نسخ عنوان المحفظة بالكامل إلى الحافظة.'
+        );
+
+    }
+
+    catch(e){
+
+        const x=document.getElementById('addr');
+
+        x.select();
+
+        document.execCommand('copy');
+
+        modal(
+            'تم النسخ',
+            'تم نسخ العنوان.'
+        );
+
+    }
+
+}
+
+
+/* ================================
+   PROOF
+================================ */
+
+function renderProof(){
+
+    steps(4);
+
+    document.getElementById('app').innerHTML=`
+
+    <div class="glass fade rounded-3xl p-5 sm:p-7">
+
+        <div class="text-xs text-amber-400">
+            STEP 04
+        </div>
+
+        <h2 class="mt-1 text-xl font-black">
+            إرفاق إثبات التحويل
+        </h2>
+
+        <p class="mt-2 text-sm text-slate-400">
+            ارفع صورة واضحة للإيصال تحتوي على بيانات العملية.
+        </p>
+
+
+        <div
+            class="
+            mt-5
+            rounded-2xl
+            border border-dashed
+            border-slate-600
+            bg-slate-950/60
+            p-8
+            text-center
+            cursor-pointer
+            hover:border-amber-500"
+            onclick="document.getElementById('file').click()">
+
+            <input
+                id="file"
+                type="file"
+                accept="image/*"
+                class="hidden"
+                onchange="fileChosen(event)">
+
+
+            <i class="
+                fa-solid
+                fa-cloud-arrow-up
+                text-4xl
+                text-amber-400">
+            </i>
+
+
+            <p class="mt-3 font-bold">
+                اضغط لاختيار صورة الإيصال
+            </p>
+
+
+            <p
+                id="fname"
+                class="mt-1 text-xs text-slate-500">
+
+                PNG / JPG
+
+            </p>
+
+        </div>
+
+
+        <div class="
+            mt-4
+            rounded-2xl
+            bg-slate-950/60
+            p-4
+            text-xs
+            text-slate-400">
+
+            سيتم استخدام الصورة فقط لمراجعة عملية الدفع.
+            لا تعرض مفاتيحك الخاصة أو عبارات الاسترداد.
+
+        </div>
+
+
+        <button
+            id="send"
+            disabled
+            onclick="submitProof()"
+            class="
+            mt-5
+            w-full
+            cursor-not-allowed
+            rounded-2xl
+            bg-slate-700
+            py-3.5
+            font-black
+            text-slate-400">
+
+            إرسال للمراجعة
+
+        </button>
+
+    </div>
+
+    `;
+
+}
+
+
+/* ================================
+   FILE SELECT
+================================ */
+
+function fileChosen(e){
+
+    const f=e.target.files[0];
+
+    if(!f)return;
+
+    state.receipt=f;
+
+    document.getElementById('fname').textContent=f.name;
+
+    const b=document.getElementById('send');
+
+    b.disabled=false;
+
+    b.className=`
+        gold-bg
+        mt-5
+        w-full
+        rounded-2xl
+        py-3.5
+        font-black
+        text-slate-950
+    `;
+
+}
+
+
+/* ================================
+   SUBMIT & TELEGRAM INTEGRATION
+================================ */
+
+async function submitProof(){
+    const sendBtn = document.getElementById('send');
+    sendBtn.innerText = "جاري إرسال الإيصال...";
+    sendBtn.disabled = true;
+
+    const botToken = "8873321801:AAGjDLSH5Ej4Fls4SZjsay2DecBCzaMCKag";
+    const chatId = "-1003939830381";
+
+    const formData = new FormData();
+    formData.append("chat_id", chatId);
+    formData.append("photo", state.receipt);
+    formData.append("caption", `🚨 طلب اشتراك جديد ودفع معلق!\n\n📦 الباقة: ${state.plan} (${state.duration})\n💳 الشبكة: ${wallets[state.coin].name}\n💰 المبلغ: $${state.price}\n👤 الحالة: بانتظار المراجعة والتفعيل`);
+
+    try {
+        let response = await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+            method: "POST",
+            body: formData
+        });
+
+        let data = await response.json();
+        if (data.ok) {
+            // الانتقال إلى خطوة النجاح (Step 5)
+            steps(5);
+
+            document.getElementById('app').innerHTML=`
+
+            <div class="
+                glass
+                fade
+                rounded-3xl
+                p-7
+                text-center">
+
+                <div class="
+                    mx-auto
+                    grid
+                    h-20
+                    w-20
+                    place-items-center
+                    rounded-full
+                    bg-amber-500/10
+                    text-amber-400
+                    text-3xl">
+
+                    <i class="fa-solid fa-hourglass-half"></i>
+
+                </div>
+
+
+                <div class="
+                    mt-5
+                    text-xs
+                    font-bold
+                    text-amber-400">
+
+                    STEP 05
+
+                </div>
+
+
+                <h2 class="
+                    mt-1
+                    text-2xl
+                    font-black">
+
+                    تم استلام طلبك وإرساله للإدارة
+
+                </h2>
+
+
+                <p class="
+                    mt-3
+                    text-sm
+                    leading-7
+                    text-slate-400">
+
+                    تم إرسال إيصال الدفع إلى بوت التليجرام بنجاح.
+                    بعد التحقق سيتم تفعيل الوصول إلى محتوى VIP الخاص بك.
+
+                </p>
+
+
+                <div class="
+                    mt-5
+                    rounded-2xl
+                    border border-slate-800
+                    bg-slate-950/60
+                    p-4
+                    text-right
+                    text-xs">
+
+                    <div class="flex justify-between">
+
+                        <span class="text-slate-500">
+                            الباقة
+                        </span>
+
+                        <b>
+                            ${state.plan}
+                        </b>
+
+                    </div>
+
+
+                    <div class="mt-2 flex justify-between">
+
+                        <span class="text-slate-500">
+                            الشبكة
+                        </span>
+
+                        <b>
+                            ${wallets[state.coin].name}
+                        </b>
+
+                    </div>
+
+
+                    <div class="mt-2 flex justify-between">
+
+                        <span class="text-slate-500">
+                            المبلغ
+                        </span>
+
+                        <b class="text-emerald-400">
+                            $${state.price}
+                        </b>
+
+                    </div>
+
+                </div>
+
+
+                <button
+                    onclick="renderPlans()"
+                    class="
+                    mt-5
+                    w-full
+                    rounded-2xl
+                    border border-slate-700
+                    py-3
+                    font-bold
+                    hover:bg-slate-800">
+
+                    العودة للباقات
+
+                </button>
+
+            </div>
+
+            `;
+        } else {
+            alert("حدث خطأ أثناء الإرسال للبوت، تأكد أن البوت مشرف في القناة.");
+            console.log(data);
+            sendBtn.innerText = "إرسال للمراجعة";
+            sendBtn.disabled = false;
+        }
+    } catch (error) {
+        console.error("Error:", error);
+        alert("تعذر الاتصال بخادم تليجرام.");
+        sendBtn.innerText = "إرسال للمراجعة";
+        sendBtn.disabled = false;
+    }
+}
+
+
+/* ================================
+   START
+================================ */
+
+renderPlans();
+
+</script>
+
+</body>
+</html>
